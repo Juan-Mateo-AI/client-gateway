@@ -10,10 +10,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api', {
-    exclude: [{
-      path: '',
-      method: RequestMethod.GET,
-    }]
+    exclude: [
+      {
+        path: '',
+        method: RequestMethod.GET,
+      },
+    ],
   });
   app.useGlobalPipes(
     new ValidationPipe({
@@ -22,7 +24,7 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalFilters(new RpcCustomExceptionFilter())
+  app.useGlobalFilters(new RpcCustomExceptionFilter());
 
   await app.listen(envs.port);
 
