@@ -7,17 +7,23 @@ import { AuthGuard } from './guards/auth.guard';
 import { Token, User } from './decorators';
 import { CurrentUser } from './interfaces/current-user.interface';
 
-@Controller('account')
-export class AccountController {
+@Controller('account/auth')
+export class AccountAuthController {
   constructor(@Inject(NATS_SERVICE) private readonly client: ClientProxy) {}
 
   @Post('register')
-  registerUser(@Body() registerUserDto: RegisterUserDto) {
-    return this.client.send('account.register.user', registerUserDto).pipe(
-      catchError((error) => {
-        throw new RpcException(error);
-      }),
-    );
+  @UseGuards(AuthGuard)
+  registerUser(@User() currentUser, @Body() userToCreate: RegisterUserDto) {
+    return this.client
+      .send('account.register.user', {
+        ...userToCreate,
+        companyId: currentUser.companyId,
+      })
+      .pipe(
+        catchError((error) => {
+          throw new RpcException(error);
+        }),
+      );
   }
 
   @Post('login')
