@@ -1,23 +1,36 @@
-import { Body, Controller, Inject, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Inject,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { NATS_SERVICE } from 'src/config';
 import { catchError } from 'rxjs';
 import { AuthGuard } from './guards/auth.guard';
 import { User } from './decorators';
 import { CurrentUser } from './interfaces/current-user.interface';
-import { CreateUserDto } from './dto';
+import { UpdateUserDto } from './dto';
 
 @Controller('account/user')
 export class AccountUserController {
   constructor(@Inject(NATS_SERVICE) private readonly client: ClientProxy) {}
 
-  @Post()
+  @Patch(':id')
   @UseGuards(AuthGuard)
-  createUser(@User() user: CurrentUser, @Body() userToCreate: CreateUserDto) {
+  updateUser(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @User() currentUser: CurrentUser,
+    @Body() userToUpdate: UpdateUserDto,
+  ) {
     return this.client
-      .send('account.user.create', {
-        currentUser: user,
-        userToCreate,
+      .send('account.user.update', {
+        currentUser,
+        userToUpdate,
+        userId: id,
       })
       .pipe(
         catchError((error) => {
