@@ -26,6 +26,7 @@ export class AccountUserController {
     @User() currentUser: CurrentUser,
     @Body() userToUpdate: UpdateUserDto,
   ) {
+    console.log('currentUser', currentUser)
     return this.client
       .send('account.user.update', {
         currentUser,
