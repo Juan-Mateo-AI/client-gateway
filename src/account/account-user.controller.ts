@@ -8,6 +8,7 @@ import {
   Get,
   UseGuards,
   Query,
+  Delete,
 } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { NATS_SERVICE } from 'src/config';
@@ -76,6 +77,25 @@ export class AccountUserController {
         companyId: currentUser.companyId,
         page: pageNumber,
         pageSize: size,
+      })
+      .pipe(
+        catchError((error) => {
+          throw new RpcException(error);
+        }),
+      );
+  }
+
+  @Delete()
+  @UseGuards(AuthGuard)
+  deleteUser(
+    @User() currentUser: CurrentUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.client
+      .send('account.user.delete', {
+        currentUser,
+        companyId: currentUser.companyId,
+        userId: id,
       })
       .pipe(
         catchError((error) => {
