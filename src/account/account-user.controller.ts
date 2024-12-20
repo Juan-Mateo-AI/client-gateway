@@ -85,7 +85,7 @@ export class AccountUserController {
       );
   }
 
-  @Delete()
+  @Delete(':id')
   @UseGuards(AuthGuard)
   deleteUser(
     @User() currentUser: CurrentUser,
