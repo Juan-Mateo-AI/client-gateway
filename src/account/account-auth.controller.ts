@@ -16,8 +16,11 @@ export class AccountAuthController {
   registerUser(@User() currentUser, @Body() userToCreate: RegisterUserDto) {
     return this.client
       .send('account.register.user', {
-        ...userToCreate,
-        companyId: currentUser.companyId,
+        userToCreate: {
+          ...userToCreate,
+          companyId: currentUser.companyId,
+        },
+        currentUser,
       })
       .pipe(
         catchError((error) => {
