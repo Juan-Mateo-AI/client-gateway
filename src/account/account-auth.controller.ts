@@ -46,4 +46,10 @@ export class AccountAuthController {
       token,
     });
   }
+
+  @UseGuards(AuthGuard)
+  @Get('me')
+  me(@User() user: CurrentUser, @Token() token: string) {
+    return user;
+  }
 }

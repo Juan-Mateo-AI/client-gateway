@@ -26,6 +26,10 @@ export class AuthGuard implements CanActivate {
         this.client.send('account.verify.user', token),
       );
 
+      if (!user.active) {
+        throw new UnauthorizedException();
+      }
+
       request['user'] = user;
       request['token'] = newToken;
     } catch {
