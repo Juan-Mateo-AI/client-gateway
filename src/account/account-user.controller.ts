@@ -9,6 +9,7 @@ import {
   UseGuards,
   Query,
   Delete,
+  Post,
 } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { NATS_SERVICE } from 'src/config';
@@ -18,6 +19,7 @@ import { User } from './decorators';
 import { CurrentUser } from './interfaces/current-user.interface';
 import { UpdateUserDto } from './dto';
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '../constants/pagination';
+import { InviteUserDto } from './dto/invite-user.dto';
 
 @Controller('account/user')
 export class AccountUserController {
@@ -99,6 +101,25 @@ export class AccountUserController {
       })
       .pipe(
         catchError((error) => {
+          throw new RpcException(error);
+        }),
+      );
+  }
+
+  @Post()
+  @UseGuards(AuthGuard)
+  inviteUser(
+    @User() currentUser: CurrentUser,
+    @Body() userToInvite: InviteUserDto,
+  ) {
+    return this.client
+      .send('account.user.invite', {
+        currentUser,
+        userToInvite,
+      })
+      .pipe(
+        catchError((error) => {
+          console.log('error client gateway', error);
           throw new RpcException(error);
         }),
       );
