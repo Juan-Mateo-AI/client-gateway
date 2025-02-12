@@ -10,6 +10,7 @@ import {
   Query,
   Delete,
   Post,
+  Put,
 } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { NATS_SERVICE } from 'src/config';
@@ -17,13 +18,30 @@ import { catchError } from 'rxjs';
 import { AuthGuard } from './guards/auth.guard';
 import { User } from './decorators';
 import { CurrentUser } from './interfaces/current-user.interface';
-import { UpdateUserDto } from './dto';
+import { ActivateUserDto, UpdateUserDto } from './dto';
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '../constants/pagination';
 import { InviteUserDto } from './dto/invite-user.dto';
 
 @Controller('account/user')
 export class AccountUserController {
   constructor(@Inject(NATS_SERVICE) private readonly client: ClientProxy) {}
+
+  @Put('/token/validate/:token')
+  validateToken(
+    @Param('token', new ParseUUIDPipe()) token: string,
+    @Query('type') type: string,
+  ) {
+    return this.client
+      .send('account.user.token.validate', {
+        token,
+        type,
+      })
+      .pipe(
+        catchError((error) => {
+          throw new RpcException(error);
+        }),
+      );
+  }
 
   @Patch(':id')
   @UseGuards(AuthGuard)
@@ -116,6 +134,24 @@ export class AccountUserController {
       .send('account.user.invite', {
         currentUser,
         userToInvite,
+      })
+      .pipe(
+        catchError((error) => {
+          console.log('error client gateway', error);
+          throw new RpcException(error);
+        }),
+      );
+  }
+
+  @Post('/activate/:token')
+  activateUser(
+    @Param('token', new ParseUUIDPipe()) token: string,
+    @Body() { password }: ActivateUserDto,
+  ) {
+    return this.client
+      .send('account.user.activate', {
+        token,
+        password,
       })
       .pipe(
         catchError((error) => {
