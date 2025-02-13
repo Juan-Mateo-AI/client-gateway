@@ -18,7 +18,7 @@ import { catchError } from 'rxjs';
 import { AuthGuard } from './guards/auth.guard';
 import { User } from './decorators';
 import { CurrentUser } from './interfaces/current-user.interface';
-import { ActivateUserDto, UpdateUserDto } from './dto';
+import { ActivateUserDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto } from './dto';
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '../constants/pagination';
 import { InviteUserDto } from './dto/invite-user.dto';
 
@@ -152,6 +152,39 @@ export class AccountUserController {
       .send('account.user.activate', {
         token,
         password,
+      })
+      .pipe(
+        catchError((error) => {
+          console.log('error client gateway', error);
+          throw new RpcException(error);
+        }),
+      );
+  }
+
+  @Put('/forgot-password')
+  forgotPassword(
+    @Body() { email }: ForgotPasswordDto,
+  ) {
+    return this.client
+      .send('account.user.forgotPassword', {
+        email,
+      })
+      .pipe(
+        catchError((error) => {
+          console.log('error client gateway', error);
+          throw new RpcException(error);
+        }),
+      );
+  }
+
+  @Put('/reset-password')
+  resetPassword(
+    @Body() { token, password }: ResetPasswordDto,
+  ) {
+    return this.client
+      .send('account.user.resetPassword', {
+        token,
+        password
       })
       .pipe(
         catchError((error) => {
