@@ -1,8 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { envs } from './config';
 import { Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
-import { RpcCustomExceptionFilter } from './common';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
   const logger = new Logger('Main-Gateway');
@@ -12,12 +13,7 @@ async function bootstrap() {
   app.enableCors();
 
   app.setGlobalPrefix('api', {
-    exclude: [
-      {
-        path: '',
-        method: RequestMethod.GET,
-      },
-    ],
+    exclude: [{ path: '', method: RequestMethod.GET }],
   });
 
   app.useGlobalPipes(
@@ -27,12 +23,20 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalFilters(new RpcCustomExceptionFilter());
+  app.useWebSocketAdapter(new IoAdapter(app));
 
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.NATS,
+    options: {
+      servers: envs.natsServers,
+    },
+  });
+
+  // Start both HTTP server & microservice
+  await app.startAllMicroservices();
   await app.listen(envs.port);
-
-  console.log('Health Check configured');
 
   logger.log(`Gateway running on port ${envs.port}`);
 }
+
 bootstrap();
