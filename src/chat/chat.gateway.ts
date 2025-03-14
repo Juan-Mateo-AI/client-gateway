@@ -17,10 +17,10 @@ import { SendMessageDto } from './dto';
 
 @WebSocketGateway({
   cors: {
-    origin: '*', // Change this to restrict allowed origins
+    origin: '*',
   },
 })
-@Controller('chat-gateway')
+// @Controller('chat-gateway')
 export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
@@ -59,7 +59,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     try {
       const message = await firstValueFrom(
         this.client
-          .send('ai-messaging.messaging.send-message', {
+          .send('ai-messaging.send-message', {
             chatId,
             fromPhoneNumber,
             toPhoneNumber,
@@ -83,17 +83,17 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     }
   }
 
-  @EventPattern('message_received')
-  handleIncomingMessage(
-    @Payload()
-    message: {
-      chatId: string;
-      companyId: string;
-      senderPhoneNumber: string;
-      content: string;
-    },
-  ) {
-    this.server.to(`room_${message.companyId}`).emit('newMessage', message);
-    this.server.to(`chat_${message.chatId}`).emit('newMessage', message);
-  }
+  // @EventPattern('message_received')
+  // handleIncomingMessage(
+  //   @Payload()
+  //   message: {
+  //     chatId: string;
+  //     companyId: string;
+  //     senderPhoneNumber: string;
+  //     content: string;
+  //   },
+  // ) {
+  //   this.server.to(`room_${message.companyId}`).emit('newMessage', message);
+  //   this.server.to(`chat_${message.chatId}`).emit('newMessage', message);
+  // }
 }

@@ -3,7 +3,7 @@ import { ChatGateway } from './chat.gateway';
 import { NatsModule } from 'src/transports/nats.module';
 
 @Module({
-  controllers: [ChatGateway],
+  providers: [ChatGateway],
   imports: [NatsModule],
 })
 export class ChatModule {}
