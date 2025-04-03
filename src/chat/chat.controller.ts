@@ -4,7 +4,6 @@ import { NATS_SERVICE } from 'src/config';
 import { catchError } from 'rxjs';
 import { AuthGuard } from './guards/auth.guard';
 import { User } from './decorators';
-import { GetLastMessagesDto } from './dto';
 
 @Controller('chat')
 export class ChatController {
@@ -12,11 +11,10 @@ export class ChatController {
 
   @Get('last-messages')
   @UseGuards(AuthGuard)
-  getLastMessages(@User() currentUser, @Body() getLastMessagesDto: GetLastMessagesDto) {
+  getLastMessages(@User() currentUser) {
     return this.client
       .send('ai-messaging.get-last-messages', {
         companyId: currentUser.companyId,
-        ...getLastMessagesDto,
       })
       .pipe(
         catchError((error) => {
