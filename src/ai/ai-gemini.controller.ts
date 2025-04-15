@@ -7,8 +7,8 @@ import { User } from 'src/account/decorators';
 import { Response } from 'express';
 import { SendMessageDto, AIAuthorizeDto, MessageResponseDto } from './dto';
 
-@Controller('gemini_ai')
-export class AIController {
+@Controller('ai/gemini_ai')
+export class AIGeminiController {
   constructor(@Inject(NATS_SERVICE) private readonly client: ClientProxy) {}
 
   @Get('authorize/:referenceId')
