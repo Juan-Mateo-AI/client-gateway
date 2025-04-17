@@ -13,7 +13,8 @@ import {
 } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { NATS_SERVICE } from 'src/config';
-import { catchError } from 'rxjs';
+import { catchError, map } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { AuthGuard } from '../account/guards/auth.guard';
 import { CurrentUser } from '../account/interfaces/current-user.interface';
 import { User } from '../account/decorators';
@@ -25,80 +26,167 @@ export class AIUserAuthController {
 
   @Post('')
   @UseGuards(AuthGuard)
-  createUserAuth(@User() currentUser: CurrentUser, @Body() userAuthToCreate: UserAuthDto) {
-    return this.client
-      .send('user_auth.create', {
-        ...userAuthToCreate,
-        reference_id: currentUser.companyId,
-      })
-      .pipe(
-        catchError((error) => {
-          throw new RpcException(error);
-        }),
+  async createUserAuth(@User() currentUser: CurrentUser, @Body() userAuthToCreate: UserAuthDto) {
+    try {
+      console.log(`Sending create user auth request for companyId: ${currentUser.companyId}`);
+      const response = await firstValueFrom(
+        this.client
+          .send('user_auth.create', {
+            ...userAuthToCreate,
+            reference_id: currentUser.companyId,
+          })
+          .pipe(
+            catchError((error) => {
+              console.error('Error in createUserAuth:', error);
+              throw new RpcException(error);
+            }),
+            map((response) => {
+              console.log('Received response:', response);
+              // Check if response has an error field
+              if (response && response.error) {
+                throw new RpcException({
+                  status: response.status || 500,
+                  data: { error: response.error },
+                });
+              }
+
+              // Return the response directly
+              return response;
+            }),
+          ),
       );
+
+      console.log('Final response:', response);
+      return response;
+    } catch (error) {
+      console.error('Exception in createUserAuth:', error);
+      throw error;
+    }
   }
 
   @Get('/:id')
   @UseGuards(AuthGuard)
-  getUserAuth(@User() currentUser: CurrentUser, @Param('id', new ParseUUIDPipe()) id: string) {
-    return this.client
-      .send('user_auth.get_by_id', {
-        user_auth_id: id,
-        reference_id: currentUser.companyId,
-      })
-      .pipe(
-        catchError((error) => {
-          throw new RpcException(error);
-        }),
-      );
+  async getUserAuth(
+    @User() currentUser: CurrentUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return firstValueFrom(
+      this.client
+        .send('user_auth.get_by_id', {
+          user_auth_id: id,
+          reference_id: currentUser.companyId,
+        })
+        .pipe(
+          catchError((error) => {
+            throw new RpcException(error);
+          }),
+          map((response) => {
+            // Check if response has an error field
+            if (response && response.error) {
+              throw new RpcException({
+                status: response.status || 500,
+                data: { error: response.error },
+              });
+            }
+
+            // Return the response directly
+            return response;
+          }),
+        ),
+    );
   }
 
   @Get('')
   @UseGuards(AuthGuard)
-  getUserAuths(@User() currentUser: CurrentUser, @Query('referenceId') referenceId: string) {
-    return this.client
-      .send('user_auth.get_by_ref_id', {
-        reference_id: referenceId || currentUser.companyId,
-      })
-      .pipe(
-        catchError((error) => {
-          throw new RpcException(error);
-        }),
-      );
+  async getUserAuths(@User() currentUser: CurrentUser, @Query('referenceId') referenceId: string) {
+    return firstValueFrom(
+      this.client
+        .send('user_auth.get_by_ref_id', {
+          reference_id: referenceId || currentUser.companyId,
+        })
+        .pipe(
+          catchError((error) => {
+            throw new RpcException(error);
+          }),
+          map((response) => {
+            // Check if response has an error field
+            if (response && response.error) {
+              throw new RpcException({
+                status: response.status || 500,
+                data: { error: response.error },
+              });
+            }
+
+            // Return the response directly
+            return response;
+          }),
+        ),
+    );
   }
 
   @Put('/:id')
   @UseGuards(AuthGuard)
-  updateUserAuth(
+  async updateUserAuth(
     @User() currentUser: CurrentUser,
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() userAuthToUpdate: UserAuthDto,
   ) {
-    return this.client
-      .send('user_auth.update', {
-        user_auth_id: id,
-        ...userAuthToUpdate,
-        reference_id: currentUser.companyId,
-      })
-      .pipe(
-        catchError((error) => {
-          throw new RpcException(error);
-        }),
-      );
+    return firstValueFrom(
+      this.client
+        .send('user_auth.update', {
+          user_auth_id: id,
+          ...userAuthToUpdate,
+          reference_id: currentUser.companyId,
+        })
+        .pipe(
+          catchError((error) => {
+            throw new RpcException(error);
+          }),
+          map((response) => {
+            // Check if response has an error field
+            if (response && response.error) {
+              throw new RpcException({
+                status: response.status || 500,
+                data: { error: response.error },
+              });
+            }
+
+            // Return the response directly
+            return response;
+          }),
+        ),
+    );
   }
 
   @Delete('/:id')
   @UseGuards(AuthGuard)
-  deleteUserAuth(@User() currentUser: CurrentUser, @Param('id', new ParseUUIDPipe()) id: string) {
-    return this.client
-      .send('user_auth.delete', {
-        user_auth_id: id,
-        reference_id: currentUser.companyId,
-      })
-      .pipe(
-        catchError((error) => {
-          throw new RpcException(error);
-        }),
-      );
+  async deleteUserAuth(
+    @User() currentUser: CurrentUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return firstValueFrom(
+      this.client
+        .send('user_auth.delete', {
+          user_auth_id: id,
+          reference_id: currentUser.companyId,
+        })
+        .pipe(
+          catchError((error) => {
+            throw new RpcException(error);
+          }),
+          map((response) => {
+            // Check if response has an error field
+            if (response && response.error) {
+              throw new RpcException({
+                status: response.status || 500,
+                data: { error: response.error },
+              });
+            }
+
+            // Return the response directly
+            return response;
+          }),
+        ),
+    );
   }
 }

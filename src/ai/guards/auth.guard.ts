@@ -21,20 +21,7 @@ export class AIAuthGuard implements CanActivate {
     if (!token) {
       throw new UnauthorizedException('Token not found');
     }
-    try {
-      const { user, token: newToken } = await firstValueFrom(
-        this.client.send('account.verify.user', token),
-      );
 
-      if (!user.active) {
-        throw new UnauthorizedException();
-      }
-
-      request['user'] = user;
-      request['token'] = newToken;
-    } catch {
-      throw new UnauthorizedException();
-    }
     return true;
   }
 
