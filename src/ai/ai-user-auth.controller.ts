@@ -24,24 +24,21 @@ import { UserAuthDto } from './dto/user-auth.dto';
 export class AIUserAuthController {
   constructor(@Inject(NATS_SERVICE) private readonly client: ClientProxy) {}
 
-  @Post('')
+  @Post()
   @UseGuards(AuthGuard)
   async createUserAuth(@User() currentUser: CurrentUser, @Body() userAuthToCreate: UserAuthDto) {
     try {
-      console.log(`Sending create user auth request for companyId: ${currentUser.companyId}`);
-      const response = await firstValueFrom(
+      return firstValueFrom(
         this.client
-          .send('user_auth.create', {
+          .send('user_auths.create', {
             ...userAuthToCreate,
             reference_id: currentUser.companyId,
           })
           .pipe(
             catchError((error) => {
-              console.error('Error in createUserAuth:', error);
               throw new RpcException(error);
             }),
             map((response) => {
-              console.log('Received response:', response);
               // Check if response has an error field
               if (response && response.error) {
                 throw new RpcException({
@@ -51,15 +48,11 @@ export class AIUserAuthController {
               }
 
               // Return the response directly
-              return response;
+              return response as UserAuthDto;
             }),
           ),
       );
-
-      console.log('Final response:', response);
-      return response;
     } catch (error) {
-      console.error('Exception in createUserAuth:', error);
       throw error;
     }
   }
@@ -72,7 +65,7 @@ export class AIUserAuthController {
   ) {
     return firstValueFrom(
       this.client
-        .send('user_auth.get_by_id', {
+        .send('user_auths.get_by_id', {
           user_auth_id: id,
           reference_id: currentUser.companyId,
         })
@@ -90,7 +83,7 @@ export class AIUserAuthController {
             }
 
             // Return the response directly
-            return response;
+            return response as UserAuthDto;
           }),
         ),
     );
@@ -101,7 +94,7 @@ export class AIUserAuthController {
   async getUserAuths(@User() currentUser: CurrentUser, @Query('referenceId') referenceId: string) {
     return firstValueFrom(
       this.client
-        .send('user_auth.get_by_ref_id', {
+        .send('user_auths.get_by_ref_id', {
           reference_id: referenceId || currentUser.companyId,
         })
         .pipe(
@@ -118,7 +111,7 @@ export class AIUserAuthController {
             }
 
             // Return the response directly
-            return response;
+            return response as UserAuthDto[];
           }),
         ),
     );
@@ -133,7 +126,7 @@ export class AIUserAuthController {
   ) {
     return firstValueFrom(
       this.client
-        .send('user_auth.update', {
+        .send('user_auths.update', {
           user_auth_id: id,
           ...userAuthToUpdate,
           reference_id: currentUser.companyId,
@@ -152,7 +145,7 @@ export class AIUserAuthController {
             }
 
             // Return the response directly
-            return response;
+            return response as UserAuthDto;
           }),
         ),
     );
@@ -166,7 +159,7 @@ export class AIUserAuthController {
   ) {
     return firstValueFrom(
       this.client
-        .send('user_auth.delete', {
+        .send('user_auths.delete', {
           user_auth_id: id,
           reference_id: currentUser.companyId,
         })
@@ -184,7 +177,7 @@ export class AIUserAuthController {
             }
 
             // Return the response directly
-            return response;
+            return response as UserAuthDto;
           }),
         ),
     );

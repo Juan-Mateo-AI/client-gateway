@@ -1,11 +1,10 @@
-import { Body, Controller, Get, Inject, Param, Patch, UseGuards, Res } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Patch, UseGuards } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { NATS_SERVICE } from 'src/config';
-import { catchError } from 'rxjs';
-import { AIAuthGuard } from './guards/auth.guard';
-import { User } from 'src/account/decorators';
-import { Response } from 'express';
+import { catchError, firstValueFrom, map } from 'rxjs';
+import { AIAuthGuard } from './guards/ai-auth.guard';
 import { SendMessageDto, AIAuthorizeDto, MessageResponseDto } from './dto';
+import { AIToken } from './decorators/ai-token.decorator';
 
 @Controller('ai/open_ai')
 export class AIOpenAIController {
@@ -13,47 +12,45 @@ export class AIOpenAIController {
 
   @Get('authorize/:referenceId')
   async authorize(@Param('referenceId') referenceId: string): Promise<AIAuthorizeDto> {
-    return this.client
-      .send('open_ai.authorize', {
-        referenceId,
-      })
-      .pipe(
-        catchError((error) => {
-          throw new RpcException(error);
-        }),
-      )
-      .toPromise();
+    try {
+      const response = await firstValueFrom(
+        this.client
+          .send('open_ai.authorize', {
+            referenceId,
+          })
+          .pipe(
+            catchError((error) => {
+              throw new RpcException(error);
+            }),
+            map((response) => {
+              // Check if response has an error field
+              if (response && response.error) {
+                throw new RpcException({
+                  status: response.status || 500,
+                  data: { error: response.error },
+                });
+              }
+              return response.data as AIAuthorizeDto;
+            }),
+          ),
+      );
+
+      return response;
+    } catch (error) {
+      throw error;
+    }
   }
 
   @Patch('chat/message')
   @UseGuards(AIAuthGuard)
   async sendMessage(
-    @User() currentUser,
+    @AIToken() token: string,
     @Body() sendMessageDto: SendMessageDto,
-    @Res({ passthrough: true }) response: Response,
   ): Promise<MessageResponseDto | any> {
-    if (sendMessageDto.stream) {
-      // Handle streaming response
-      const stream = await this.client
-        .send('open_ai.chat.message.stream', {
-          companyId: currentUser.companyId,
-          message: sendMessageDto.message,
-          history: sendMessageDto.history,
-        })
-        .pipe(
-          catchError((error) => {
-            throw new RpcException(error);
-          }),
-        )
-        .toPromise();
-
-      response.setHeader('Content-Type', 'text/event-stream');
-      return stream;
-    } else {
-      // Handle non-streaming response
-      return this.client
+    return firstValueFrom(
+      this.client
         .send('open_ai.chat.message', {
-          companyId: currentUser.companyId,
+          token: token,
           message: sendMessageDto.message,
           history: sendMessageDto.history,
         })
@@ -61,8 +58,19 @@ export class AIOpenAIController {
           catchError((error) => {
             throw new RpcException(error);
           }),
-        )
-        .toPromise();
-    }
+          map((response) => {
+            // Check if response has an error field
+            if (response && response.error) {
+              throw new RpcException({
+                status: response.status || 500,
+                data: { error: response.error },
+              });
+            }
+
+            // Return the response as MessageResponseDto
+            return response.data as MessageResponseDto;
+          }),
+        ),
+    );
   }
 }

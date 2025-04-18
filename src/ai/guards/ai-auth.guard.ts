@@ -21,6 +21,7 @@ export class AIAuthGuard implements CanActivate {
     if (!token) {
       throw new UnauthorizedException('Token not found');
     }
+    request['token'] = token;
 
     return true;
   }

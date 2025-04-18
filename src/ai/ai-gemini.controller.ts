@@ -1,12 +1,11 @@
-import { Body, Controller, Get, Inject, Param, Patch, UseGuards, Res, Post } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, UseGuards, Post } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { NATS_SERVICE } from 'src/config';
 import { catchError, map } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
-import { AIAuthGuard } from './guards/auth.guard';
-import { User } from 'src/account/decorators';
-import { request, Response } from 'express';
+import { AIAuthGuard } from './guards/ai-auth.guard';
 import { SendMessageDto, AIAuthorizeDto, MessageResponseDto } from './dto';
+import { AIToken } from './decorators/ai-token.decorator';
 
 @Controller('ai/gemini_ai')
 export class AIGeminiController {
@@ -34,12 +33,12 @@ export class AIGeminiController {
               }
 
               // Return the response directly
-              return response;
+              return response.data as AIAuthorizeDto;
             }),
           ),
       );
 
-      return response.data as AIAuthorizeDto;
+      return response;
     } catch (error) {
       throw error;
     }
@@ -48,17 +47,15 @@ export class AIGeminiController {
   @Post('chat/message')
   @UseGuards(AIAuthGuard)
   async sendMessage(
-    @User() currentUser,
+    @AIToken() token: string,
     @Body() sendMessageDto: SendMessageDto,
-    @Res({ passthrough: true }) response: Response,
   ): Promise<MessageResponseDto | any> {
     return firstValueFrom(
       this.client
         .send('gemini_ai.chat.message', {
-          companyId: currentUser.companyId,
           message: sendMessageDto.message,
           history: sendMessageDto.history,
-          token: request.headers.authorization?.split(' ')[1]
+          token: token,
         })
         .pipe(
           catchError((error) => {
