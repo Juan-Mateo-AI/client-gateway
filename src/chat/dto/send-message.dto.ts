@@ -14,7 +14,7 @@ export class SendMessageDto {
   toPhoneNumber: string;
 
   @IsUUID()
-  @IsDefined()
+  @IsOptional()
   companyId: string;
 
   @IsString()

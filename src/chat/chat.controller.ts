@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Inject, Param, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post, UseGuards } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { NATS_SERVICE } from 'src/config';
 import { catchError } from 'rxjs';
 import { AuthGuard } from './guards/auth.guard';
 import { User } from './decorators';
+import { SendMessageDto } from './dto';
 
 @Controller('chat')
 export class ChatController {
@@ -30,6 +31,27 @@ export class ChatController {
       .send('ai-messaging.get-chat', {
         companyId: currentUser.companyId,
         chatId,
+      })
+      .pipe(
+        catchError((error) => {
+          throw new RpcException(error);
+        }),
+      );
+  }
+
+  @Post()
+  @UseGuards(AuthGuard)
+  sendMessage(
+    @User() currentUser,
+    @Body() { chatId, fromPhoneNumber, toPhoneNumber, content }: SendMessageDto,
+  ) {
+    return this.client
+      .send('ai-messaging.send-message', {
+        chatId,
+        fromPhoneNumber: fromPhoneNumber,
+        toPhoneNumber,
+        companyId: currentUser.companyId,
+        content,
       })
       .pipe(
         catchError((error) => {
