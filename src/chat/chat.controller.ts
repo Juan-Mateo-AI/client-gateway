@@ -1,15 +1,19 @@
 import { Body, Controller, Get, Inject, Param, Post, UseGuards } from '@nestjs/common';
-import { ClientProxy, RpcException } from '@nestjs/microservices';
+import { ClientProxy, EventPattern, RpcException } from '@nestjs/microservices';
 import { NATS_SERVICE } from 'src/config';
 import { catchError } from 'rxjs';
 import { AuthGuard } from './guards/auth.guard';
 import { User } from './decorators';
-import { SendMessageDto } from './dto';
+import { MessageDto, SendMessageDto } from './dto';
 import { MESSAGE_SOURCES } from './constants/message-sources';
+import { ChatService } from './chat.service';
 
 @Controller('chat')
 export class ChatController {
-  constructor(@Inject(NATS_SERVICE) private readonly client: ClientProxy) {}
+  constructor(
+    @Inject(NATS_SERVICE) private readonly client: ClientProxy,
+    private readonly chatService: ChatService,
+  ) {}
 
   @Get('last-messages')
   @UseGuards(AuthGuard)
@@ -61,5 +65,10 @@ export class ChatController {
           throw new RpcException(error);
         }),
       );
+  }
+
+  @EventPattern('chat.notify-all')
+  notifyAll(@Body() message: MessageDto) {
+    return this.chatService.notifyAll(message);
   }
 }

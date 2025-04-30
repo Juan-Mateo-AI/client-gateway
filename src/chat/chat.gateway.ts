@@ -13,7 +13,7 @@ import { Inject } from '@nestjs/common';
 import { NATS_SERVICE } from 'src/config';
 import { ClientProxy, EventPattern, Payload, RpcException } from '@nestjs/microservices';
 import { catchError, firstValueFrom } from 'rxjs';
-import { SendMessageDto } from './dto';
+import { MessageDto, SendMessageDto } from './dto';
 import { MESSAGE_SOURCES } from './constants/message-sources';
 
 @WebSocketGateway({
@@ -84,16 +84,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     }
   }
 
-  @SubscribeMessage('message_received')
-  handleIncomingMessage(
-    @MessageBody()
-    message: {
-      chatId: string;
-      companyId: string;
-      senderPhoneNumber: string;
-      content: string;
-    },
-  ) {
+  notifyAll(message: MessageDto) {
     this.server.to(`room_${message.companyId}`).emit('newMessage', message);
     this.server.to(`chat_${message.chatId}`).emit('newMessage', message);
   }
