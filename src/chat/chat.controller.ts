@@ -5,6 +5,7 @@ import { catchError } from 'rxjs';
 import { AuthGuard } from './guards/auth.guard';
 import { User } from './decorators';
 import { SendMessageDto } from './dto';
+import { MESSAGE_SOURCES } from './constants/message-sources';
 
 @Controller('chat')
 export class ChatController {
@@ -39,19 +40,21 @@ export class ChatController {
       );
   }
 
+  // This endpoint will be hit by Meta to send message, we will need to create a service to parse request to what we expect
+  // Assuming a happy path.
   @Post()
   @UseGuards(AuthGuard)
   sendMessage(
     @User() currentUser,
-    @Body() { chatId, fromPhoneNumber, toPhoneNumber, content }: SendMessageDto,
+    @Body() { fromPhoneNumber, toPhoneNumber, content }: SendMessageDto,
   ) {
     return this.client
       .send('ai-messaging.send-message', {
-        chatId,
         fromPhoneNumber: fromPhoneNumber,
         toPhoneNumber,
         companyId: currentUser.companyId,
         content,
+        source: MESSAGE_SOURCES.META,
       })
       .pipe(
         catchError((error) => {

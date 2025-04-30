@@ -14,6 +14,7 @@ import { NATS_SERVICE } from 'src/config';
 import { ClientProxy, EventPattern, Payload, RpcException } from '@nestjs/microservices';
 import { catchError, firstValueFrom } from 'rxjs';
 import { SendMessageDto } from './dto';
+import { MESSAGE_SOURCES } from './constants/message-sources';
 
 @WebSocketGateway({
   cors: {
@@ -64,6 +65,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
             toPhoneNumber,
             companyId,
             content,
+            source: MESSAGE_SOURCES.CLIENT,
           })
           .pipe(
             catchError((error) => {
