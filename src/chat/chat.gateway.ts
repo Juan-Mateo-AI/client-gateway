@@ -74,9 +74,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
           ),
       );
 
-      this.server.to(`room_${message.companyId}`).emit('newMessage', message);
-
-      this.server.to(`chat_${message.chatId}`).emit('newMessage', message);
+      this.server.to(`room_${message?.messageReceived?.companyId}`).emit('newMessage', message);
 
       return message;
     } catch (error) {
