@@ -9,12 +9,13 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Inject } from '@nestjs/common';
+import { Inject, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { NATS_SERVICE } from 'src/config';
-import { ClientProxy, EventPattern, Payload, RpcException } from '@nestjs/microservices';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { catchError, firstValueFrom } from 'rxjs';
-import { MessageDto, SendMessageDto } from './dto';
+import { SendMessageDto } from './dto';
 import { MESSAGE_SOURCES } from './constants/message-sources';
+import { WsAuthGuard } from './guards/ws-auth.guard';
 
 @WebSocketGateway({
   cors: {
@@ -39,23 +40,27 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     console.log(`Client disconnected: ${client.id}`);
   }
 
+  @UseGuards(WsAuthGuard)
   @SubscribeMessage('joinCompany')
   handleJoinCompany(@MessageBody() companyId: string, @ConnectedSocket() client: Socket) {
+    if (client.data.user.companyId !== companyId) {
+      throw new UnauthorizedException('No authorized to join this company');
+    }
+
     client.join(`room_${companyId}`);
-    console.log(`User joined room: room_${companyId}`);
   }
 
-  @SubscribeMessage('joinChat')
-  async handleJoinChat(@MessageBody() chatId: string, @ConnectedSocket() client: Socket) {
-    client.join(`chat_${chatId}`);
-    console.log(`User joined chat: chat_${chatId}`);
-  }
-
+  @UseGuards(WsAuthGuard)
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
     @MessageBody()
     { chatId, fromPhoneNumber, toPhoneNumber, companyId, content }: SendMessageDto,
+    @ConnectedSocket() client: Socket,
   ) {
+    if (client.data.user.companyId !== companyId) {
+      throw new UnauthorizedException('No authorized to send messages to this company');
+    }
+
     try {
       const message = await firstValueFrom(
         this.client
