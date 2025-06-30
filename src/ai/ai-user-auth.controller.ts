@@ -59,10 +59,7 @@ export class AIUserAuthController {
 
   @Get('/:id')
   @UseGuards(AuthGuard)
-  async getUserAuth(
-    @User() currentUser: CurrentUser,
-    @Param('id', new ParseUUIDPipe()) id: string,
-  ) {
+  async getUserAuth(@User() currentUser: CurrentUser, @Param('id') id: string) {
     return firstValueFrom(
       this.client
         .send('user_auths.get_by_id', {
@@ -92,7 +89,7 @@ export class AIUserAuthController {
   @Get('')
   @UseGuards(AuthGuard)
   async getUserAuths(@User() currentUser: CurrentUser, @Query('referenceId') referenceId: string) {
-    return firstValueFrom(
+    return await firstValueFrom(
       this.client
         .send('user_auths.get_by_ref_id', {
           reference_id: referenceId || currentUser.companyId,
